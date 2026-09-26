@@ -20,7 +20,10 @@ _TOOLS = (
 
 
 def _cli_setup(parser) -> None:
-    parser.add_argument("args", nargs="*", help="x402 subcommand and arguments, e.g. `topup 5` or `wallet import me`")
+    import argparse
+    # REMAINDER, so flags like --phrase and --stdin reach the subcommand instead of Hermes's own parser
+    parser.add_argument("args", nargs=argparse.REMAINDER,
+                        help="x402 subcommand and arguments, e.g. `topup 5` or `wallet import me --phrase`")
 
 
 def register(ctx) -> None:
