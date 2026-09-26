@@ -59,3 +59,11 @@ def test_vendored_signer_core_matches_the_container_signer():
     a, b = ROOT / "signer" / "x402signer", ROOT / "x402" / "x402signer"
     for f in sorted(p.name for p in a.glob("*.py")):
         assert (a / f).read_text() == (b / f).read_text(), f"x402/x402signer/{f} drifted: cp -R signer/x402signer x402/"
+
+
+def test_streamed_response_does_not_record_a_pre_charge_balance(broker, funded):
+    seen = []
+    stream = client(broker, funded, seen).chat.completions.create(
+        model="gpt-oss-120b", messages=[{"role": "user", "content": "ping"}], stream=True)
+    list(stream)
+    assert seen == []   # a streamed response's balance header predates its charge

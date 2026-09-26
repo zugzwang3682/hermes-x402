@@ -228,9 +228,23 @@ class FakeBroker:
                     if outer.balances[w] < outer.charge:
                         return self._json(402, {"detail": {"error": "insufficient balance", "code": "insufficient_balance",
                                                            "balance_usd": outer.balances[w]}})
-                    outer.balances[w] -= outer.charge
                     req = json.loads(body)
                     outer.chats.append({"model": req["model"], "auth": self.headers.get("Authorization")})
+                    if req.get("stream"):
+                        # like the real broker: headers (with the pre-charge balance) go out, then the charge lands
+                        pre = outer.balances[w]
+                        outer.balances[w] -= outer.charge
+                        chunk = {"id": "c", "object": "chat.completion.chunk", "created": 0, "model": req["model"],
+                                 "choices": [{"index": 0, "delta": {"role": "assistant", "content": "pong"},
+                                              "finish_reason": "stop"}]}
+                        data = f"data: {json.dumps(chunk)}\n\ndata: [DONE]\n\n".encode()
+                        self.send_response(200)
+                        self.send_header("Content-Type", "text/event-stream")
+                        self.send_header("Content-Length", str(len(data)))
+                        self.send_header("X-Balance-Usd", f"{pre:.8f}")
+                        self.end_headers()
+                        return self.wfile.write(data)
+                    outer.balances[w] -= outer.charge
                     return self._json(200, {"id": "c", "object": "chat.completion", "created": 0, "model": req["model"],
                                             "choices": [{"index": 0, "finish_reason": "stop",
                                                          "message": {"role": "assistant", "content": "pong"}}],

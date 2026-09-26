@@ -113,4 +113,36 @@ terminal can read files under the Hermes home, so keep the balance small, or run
 
 ## 4. From Slack
 
-_(filled in during the verified install)_
+Type `/x402` commands with a `!` in Slack (`!x402 status`). Slack reserves `/` for its own slash commands and rejects
+them inside threads; `/hermes x402 status` also works outside threads.
+
+Verified sequence (new chat with the bot):
+
+```
+!x402 balance
+  autumn8: no balance yet — run x402 topup <usd>
+  wallet hermes (0x5e7a…C333): $4.9950 USDC on Base
+
+!x402 topup 0.10
+  Topped up $0.10 on autumn8 from hermes (Base) — https://basescan.org/tx/0x…
+  Balance: $5.0805
+  Main model set to gpt-oss-120b on the x402 broker. New messages use it; …
+
+!x402 status
+  signer: local (keys under the Hermes home — keep balances small)
+  limits: $1.0/payment, $5.0/24h; top-ups to brokers $20.0/payment, $20.0/24h; networks eip155:8453
+  wallets: hermes
+  broker: autumn8 https://x402.autumn8.net; balance $5.0805, token valid 29 more days
+  main model: gpt-oss-120b (x402-broker)
+```
+
+After that, ordinary messages are answered by `gpt-oss-120b` and billed per token to the balance. A typical Hermes turn
+(about 12.7K prompt tokens with the full toolset) costs about $0.003 on gpt-oss-120b.
+
+- The balance belongs to the wallet on the broker, not to the Hermes install. A fresh install with an already-funded
+  wallet shows "no balance yet" until any top-up (≥ $0.10) fetches its token; the existing balance is still there.
+- Before any model is set, Hermes's session banner shows its default provider (`openrouter`) with an empty model.
+  That's a label: with no OpenRouter key nothing is sent there. After the top-up, `/new` shows `x402-broker`.
+- A Hermes install can only have one gateway per Slack app token; stop any other Hermes using the same app first.
+- To switch back later: `!x402 use main previous` restores the model that was set before (if there was one), or use
+  Hermes's `/model` (outside threads).

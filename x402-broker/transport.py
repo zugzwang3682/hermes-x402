@@ -43,6 +43,10 @@ class BalanceTransport(httpx.BaseTransport):
         out = httpx.Request(request.method, url, headers=headers, content=request.read(), extensions=request.extensions)
         resp = self.inner.handle_request(out)
         charged, bal = resp.headers.get("x-charged-usd"), resp.headers.get("x-balance-usd")
+        if "text/event-stream" in resp.headers.get("content-type", ""):
+            # A streamed response's headers go out before the request is metered, so they show the balance before
+            # this charge. Only non-streamed responses carry a settled balance; `x402 balance` asks the broker.
+            charged = bal = None
         if charged or bal:
             with _lock:
                 STATS["calls"] += 1

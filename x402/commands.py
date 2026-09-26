@@ -132,23 +132,27 @@ class Commands:
             lines.append(f"Main model stays {model} ({prov}). To run on this balance: x402 use main <model>")
         return "\n".join(lines)
 
+    def _live_balance(self, name: str, url: str) -> str:
+        """The broker's own figure (the stored one can lag streamed calls). Returns a display line."""
+        st = self._store().get(name)
+        if not st["jwt"]:
+            return f"{name}: no balance yet — run x402 topup <usd>"
+        import httpx
+        try:
+            r = httpx.get(url + "/v1/balance", headers={"Authorization": f"Bearer {st['jwt']}"}, timeout=15)
+        except httpx.HTTPError as e:
+            return f"{name} balance: {_money(st['balance_usd'])} (last known; broker unreachable: {e})"
+        if r.status_code == 200:
+            bal = r.json().get("balance_usd")
+            self._store().put(name, balance_usd=bal)
+            return f"{name} balance: {_money(bal)}"
+        if r.status_code == 401:
+            return f"{name}: token expired — run x402 topup <usd> (any amount ≥ $0.10 renews it)"
+        return f"{name}: balance check failed (HTTP {r.status_code})"
+
     def cmd_balance(self, rest: list[str]) -> str:
         name, url, _ = self._active()
-        st = self._store().get(name)
-        lines = []
-        if st["jwt"]:
-            import httpx
-            r = httpx.get(url + "/v1/balance", headers={"Authorization": f"Bearer {st['jwt']}"}, timeout=15)
-            if r.status_code == 200:
-                bal = r.json().get("balance_usd")
-                self._store().put(name, balance_usd=bal)
-                lines.append(f"{name} balance: {_money(bal)}")
-            elif r.status_code == 401:
-                lines.append(f"{name}: token expired — run x402 topup <usd> (any amount ≥ $0.10 renews it)")
-            else:
-                lines.append(f"{name}: balance check failed (HTTP {r.status_code})")
-        else:
-            lines.append(f"{name}: no balance yet — run x402 topup <usd>")
+        lines = [self._live_balance(name, url)]
         try:
             for b in self.host.signer().balances().get("balances", []):
                 lines.append(f"wallet {b['wallet']} ({b['address'][:6]}…{b['address'][-4:]}): "
@@ -284,7 +288,7 @@ class Commands:
             lines.append(f"signer unreachable: {e}")
         st = self._store().get(name)
         exp = B.jwt_expiry(st["jwt"]) if st["jwt"] else None
-        lines.append(f"broker: {name} {url}; balance {_money(st['balance_usd']) if st['jwt'] else 'none'}"
+        lines.append(f"broker: {name} {url}; {self._live_balance(name, url).split(': ', 1)[-1]}"
                      + (f", token valid {max(0, int((exp - time.time()) // 86400))} more days" if exp else ""))
         prov, model = self.host.main_model()
         sp, sm = self.host.subagent_model()
