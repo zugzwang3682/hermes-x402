@@ -1,0 +1,11 @@
+name: x402-broker
+kind: model-provider
+version: 0.2.0
+manifest_version: 2
+description: "Run Hermes on open models from an x402 inference broker (default: Autumn Eight), billed per token to a USDC balance bought with /x402 topup. Needs the x402 plugin."
+author: Autumn Eight LLC
+license: MIT
+tags: [model-provider, x402, usdc, prepaid]
+requires_hermes: ">=0.21.4"
+optional_env:
+  - X402_BROKER_API_KEY

@@ -1,0 +1,6 @@
+[project]
+name = "hermes-plugin-x402"
+version = "0.2.0"
+description = "x402 payments and broker balances for Hermes Agent"
+requires-python = ">=3.10"
+dependencies = ["httpx>=0.27", "eth-account>=0.13,<0.14"]
