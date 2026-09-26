@@ -288,7 +288,7 @@ class Commands:
             lines.append(f"signer unreachable: {e}")
         st = self._store().get(name)
         exp = B.jwt_expiry(st["jwt"]) if st["jwt"] else None
-        lines.append(f"broker: {name} {url}; {self._live_balance(name, url).split(': ', 1)[-1]}"
+        lines.append(f"broker: {name} {url}; {self._live_balance(name, url).replace(f'{name} balance: ', 'balance ').replace(f'{name}: ', '')}"
                      + (f", token valid {max(0, int((exp - time.time()) // 86400))} more days" if exp else ""))
         prov, model = self.host.main_model()
         sp, sm = self.host.subagent_model()
