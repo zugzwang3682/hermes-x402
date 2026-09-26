@@ -65,11 +65,51 @@ Only one Hermes may connect with a given app token: Slack splits events between 
 
 ## 2. The plugins
 
-_(filled in during the verified install)_
+Two plugins from this repo, installed with Hermes's own installer. It clones the subdirectory and installs each one's
+Python dependencies from its `pyproject.toml` (`eth-account` for the wallet, `openai` for the provider):
+
+```bash
+docker exec -u hermes hermes hermes plugins install zugzwang3682/hermes-x402/x402 --enable
+docker exec -u hermes hermes hermes plugins install zugzwang3682/hermes-x402/x402-broker --enable
+```
+
+Hermes warns that the source isn't from its catalog; that's expected for a plugin installed straight from GitHub. The
+gateway picks both up without a restart. Check:
+
+```bash
+docker exec -u hermes hermes hermes x402 status
+```
+
+```
+signer: local (keys under the Hermes home — keep balances small)
+limits: $1.0/payment, $5.0/24h; top-ups to brokers $20.0/payment, $20.0/24h; networks eip155:8453
+wallets: none — x402 wallet new <name>
+broker: autumn8 https://x402.autumn8.net; balance none
+main model: none (no provider) — not usable
+```
+
+Update later with `hermes plugins update x402` and `hermes plugins update x402-broker`.
 
 ## 3. A wallet
 
-_(filled in during the verified install)_
+The wallet holds USDC on Base; it needs no ETH (the broker's facilitator pays gas). Create or import it **from a shell**:
+`/x402` refuses keys and secret phrases in chat.
+
+```bash
+# a new wallet (prints only the address; then send it USDC on Base)
+docker exec -u hermes hermes hermes x402 wallet new hermes
+
+# or import an existing one: a secret phrase (hidden prompt; --index N for account N+1 in MetaMask/Rabby)
+docker exec -it -u hermes hermes hermes x402 wallet import hermes --phrase
+
+# or a private key (hidden prompt), or from a file holding `0x…` or `NAME=0x…`
+docker exec -it -u hermes hermes hermes x402 wallet import hermes
+docker exec -i  -u hermes hermes hermes x402 wallet import hermes --stdin < wallet.key
+```
+
+With the built-in signer the key is stored under `~/.hermes/plugin-data/x402/signer/wallets/` (mode 600). The agent's
+terminal can read files under the Hermes home, so keep the balance small, or run the key-holding container instead
+(`signer/`, then `hermes config set plugins.entries.x402.settings.signer remote`).
 
 ## 4. From Slack
 
